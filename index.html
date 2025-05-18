@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tech & Investigative News</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+      padding: 20px;
+      color: #222;
+    }
+    h1 {
+      text-align: center;
+      color: #1a73e8;
+    }
+    #search-bar {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 70%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 9px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      margin-left: 10px;
+      border-radius: 5px;
+    }
+    #news-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .article {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(1,1,1,2);
+    }
+    .article h3 {
+      margin-top: 0;
+    }
+    .article a {
+      color: #1a73e8;
+      text-decoration: none;
+    }
+    .article a:hover {
+      text-decoration: underline;
+    }
+    .article small {
+      color: #666;
+    }
+    #load-more {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 25px;
+      background: #333;
+      color: white;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+      border-radius: 9px;
+    }
+  
+  </style>
+</head>
+<body>
+  <h1>Habari News</h1>
+  
+  <h3>All Top News across the world Now on your palm!</h3>
+  
+
+  <div id="search-bar">
+    <input type="text" id="searchInput" placeholder="Get both Local and Global news here..." />
+    <button onclick="searchNews()">Search</button>
+  </div>
+
+  <div id="news-container">Loading news...</div>
+  <button id="load-more" onclick="loadMore()">Load More</button>
+
+  <script>
+    const apiKey = '170f21e72e48dbe40610830e92a542b1'; // Replace with your GNews API key
+    let page = 1;
+    let currentQuery = 'technology+OR+sports+OR+political+OR+educational+OR+AI+OR+cybersecurity+OR+Kenyan news+OR+uganda news';
+    const container = document.getElementById('news-container');
+    const loadMoreBtn = document.getElementById('load-more');
+
+    async function fetchNews(query = currentQuery, reset = false) {
+      if (reset) {
+        container.innerHTML = 'Wait! Loading news...';
+        page = 1;
+      }
+
+      try {
+        const res = await fetch(`https://gnews.io/api/v4/search?q=${query}&lang=en&max=10&page=${page}&token=${apiKey}`);
+        const data = await res.json();
+
+        if (reset) container.innerHTML = '';
+        if (!data.articles || data.articles.length === 0) {
+          container.innerHTML = '<p>No articles found.</p>';
+          return;
+        }
+
+        // Save to localStorage
+        if (reset) localStorage.setItem('lastArticles', JSON.stringify(data.articles));
+
+        data.articles.forEach(article => {
+          const div = document.createElement('div');
+          div.className = 'article';
+          div.innerHTML = `
+            <h3><a href="${article.url}" target="_blank">${article.title}</a></h3>
+            <p>${article.description || 'No summary available.'}</p>
+            <small><strong>Source:</strong> ${article.source.name} | ${new Date(article.publishedAt).toLocaleString()}</small>
+          `;
+          container.appendChild(div);
+        });
+
+        page++;
+      } catch (err) {
+        console.error('Error:', err);
+        const saved = localStorage.getItem('lastArticles');
+        if (saved) {
+          container.innerHTML = '<p style="color:red"><strong>Offline Mode.</strong></p>';
+          JSON.parse(saved).forEach(article => {
+            const div = document.createElement('div');
+            div.className = 'article';
+            div.innerHTML = `
+              <h3><a href="${article.url}" target="_blank">${article.title}</a></h3>
+              <p>${article.description || 'No summary available.'}</p>
+              <small><strong>Source:</strong> ${article.source.name}</small>
+            `;
+            container.appendChild(div);
+          });
+        } else {
+          container.innerHTML = '<p>Unable to load news and no cached data found.</p>';
+        }
+      }
+    }
+
+    function searchNews() {
+      const searchTerm = document.getElementById('searchInput').value.trim();
+      currentQuery = searchTerm ? encodeURIComponent(searchTerm) : 'technology+OR+OR+health+OR+OR+war in Ukraine and Russia+OR+OR+united state of America+OR+kenya+OR+uganda+OR+tanzania+OR+investigation+OR+AI+OR+cybersecurity';
+      page = 1;
+      fetchNews(currentQuery, true);
+    }
+
+    function loadMore() {
+      fetchNews(currentQuery, false);
+    }
+
+    // Initial load
+    fetchNews(currentQuery, true);
+
+    // Optional: Refresh every 60 seconds
+    setInterval(() => fetchNews(currentQuery, true), 240000);
+  </script>
+</body>
+</html>
